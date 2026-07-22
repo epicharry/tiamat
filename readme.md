@@ -18,6 +18,7 @@ Use at your own risk, as some features might violate Riot Games' Terms of Servic
 
 ### Game Automation
 * Auto Accept Match
+* Ragequeue with selectable lobby type
 * Autopick Champion
 * Autoban Champion
 * Smart Dodge (Avoid client restart)
@@ -76,6 +77,7 @@ uv run pytest
 * **Icon Changer**: Choose between icon changer (1-100) or client only (all icons)
 * **Profile Background**: Search the skin/champion name and select the one you want
 * **Auto Accept**: Automatically accepts match when found
+* **Ragequeue**: Automatically creates the selected lobby, fills unset position preferences, and starts queue after a game
 * **Autopick**: Select champion to instantly pick when available
 * **Autoban**: Select champion to ban during champion select
 * **Smart Dodge**: Dodge queue without client restart

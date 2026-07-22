@@ -13,6 +13,7 @@ from Dodge import dodge
 from Icons import change_profile_icon
 from Iconsclient import icon_client
 from InstalockAutoban import InstalockAutoban
+from RageQueue import RageQueue
 from RemoveFriends import remove_all_friends
 from Rengar import Rengar, check_league_client
 from RestartUX import restart
@@ -52,6 +53,7 @@ class LeagueClientTool:
         self.rengar = Rengar()
         self.auto_accept = AutoAccept(self.config)
         self.instalock_autoban = InstalockAutoban(self.config)
+        self.ragequeue = RageQueue(self.config)
         self.chat = Chat()
         self._initialize_menu_options()
         self._initialize_threads()
@@ -87,6 +89,12 @@ class LeagueClientTool:
             12: MenuOption("Remove All Friends", remove_all_friends),
             13: MenuOption("Change Profile Badges", change_profile_badges),
             14: MenuOption("Change Status", change_status),
+            15: MenuOption(
+                "Configure Ragequeue",
+                self._handle_ragequeue_selection,
+                True,
+                "ragequeue",
+            ),
             99: MenuOption("Exit", self._exit_program),
         }
 
@@ -95,6 +103,10 @@ class LeagueClientTool:
 
         threading.Thread(
             target=self.instalock_autoban.monitor_champ_select, daemon=True
+        ).start()
+
+        threading.Thread(
+            target=self.ragequeue.monitor_gameflow, daemon=True
         ).start()
 
     def _get_summoner_info(self):
@@ -183,6 +195,10 @@ class LeagueClientTool:
                     state = "ON" if self.instalock_autoban.auto_ban_enabled else "OFF"
                     state_style = "green" if state == "ON" else "red"
                     menu_text += f" ([{state_style}]{state}[/{state_style}]) - Champion: [cyan]{self.instalock_autoban.auto_ban_champion}[/cyan]"
+                elif key == 15:
+                    state = "ON" if self.ragequeue.enabled else "OFF"
+                    state_style = "green" if state == "ON" else "red"
+                    menu_text += f" ([{state_style}]{state}[/{state_style}]) - Queue: [cyan]{self.ragequeue.queue_name}[/cyan] - Positions: [cyan]{self.ragequeue.positions_name}[/cyan]"
                 else:
                     state = self._get_feature_state(option.feature_name)
                     state_style = "green" if state == "ON" else "red"
@@ -199,6 +215,7 @@ class LeagueClientTool:
         states = {
             "auto_accept": self.auto_accept.auto_accept_enabled,
             "chat": self.chat.chat_state,
+            "ragequeue": self.ragequeue.enabled,
         }
         return "ON" if states.get(feature_name, False) else "OFF"
 
@@ -210,6 +227,49 @@ class LeagueClientTool:
             self.instalock_autoban.set_instalock_champion(champion_name)
         else:
             self.instalock_autoban.set_auto_ban_champion(champion_name)
+
+    def _handle_ragequeue_selection(self):
+        self.console.print("\n[white]Select the lobby type:[/white]")
+        for option, (name, _queue_id) in self.ragequeue.QUEUE_TYPES.items():
+            self.console.print(f"[red]{option}[/red] - {name}")
+        self.console.print("[red]99[/red] - Disable Ragequeue")
+
+        selection = self.console.input("\n[red]~-> [/red]")
+        if selection == "99":
+            self.ragequeue.disable()
+            return
+
+        try:
+            _name, queue_id = self.ragequeue.QUEUE_TYPES[int(selection)]
+        except (ValueError, KeyError):
+            self.console.print("[red]Invalid lobby type.[/red]")
+            return
+
+        first_position = self._select_ragequeue_position("first")
+        if first_position is None:
+            return
+
+        second_position = self._select_ragequeue_position("second")
+        if second_position is None:
+            return
+        if first_position == second_position:
+            self.console.print("[red]First and second positions must be different.[/red]")
+            return
+
+        self.ragequeue.configure(queue_id, first_position, second_position)
+
+    def _select_ragequeue_position(self, preference):
+        self.console.print(f"\n[white]Select the {preference} position:[/white]")
+        for option, (name, _position) in self.ragequeue.POSITION_TYPES.items():
+            self.console.print(f"[red]{option}[/red] - {name}")
+
+        selection = self.console.input("\n[red]~-> [/red]")
+        try:
+            _name, position = self.ragequeue.POSITION_TYPES[int(selection)]
+        except (ValueError, KeyError):
+            self.console.print("[red]Invalid position.[/red]")
+            return None
+        return position
 
     def _exit_program(self):
         raise KeyboardInterrupt

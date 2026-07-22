@@ -1,9 +1,17 @@
 import copy
 import json
+import sys
 from pathlib import Path
 
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
+def _config_path():
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "config.json"
+
+    return Path(__file__).resolve().parent.parent / "config.json"
+
+
+CONFIG_PATH = _config_path()
 
 DEFAULT_CONFIG = {
     "instalock": {
@@ -16,6 +24,12 @@ DEFAULT_CONFIG = {
     },
     "auto_accept": {
         "enabled": False,
+    },
+    "ragequeue": {
+        "enabled": False,
+        "queue_id": 420,
+        "first_position": None,
+        "second_position": None,
     },
 }
 

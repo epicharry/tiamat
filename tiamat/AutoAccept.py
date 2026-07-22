@@ -22,14 +22,17 @@ class AutoAccept:
     def monitor_queue(self):
         while True:
             if self.auto_accept_enabled:
-                response = self.rengar.lcu_request(
-                    "GET", "/lol-lobby/v2/lobby/matchmaking/search-state", ""
-                )
+                try:
+                    response = self.rengar.lcu_request(
+                        "GET", "/lol-lobby/v2/lobby/matchmaking/search-state", ""
+                    )
 
-                if response.status_code == 200:
-                    match_data = response.json()
+                    if response.status_code == 200:
+                        match_data = response.json()
 
-                    if match_data.get("searchState") == "Found":
-                        self.accept_match()
+                        if match_data.get("searchState") == "Found":
+                            self.accept_match()
+                except Exception as e:
+                    print(f"Auto accept monitor error: {e}")
 
             time.sleep(0.5)
